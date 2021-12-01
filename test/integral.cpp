@@ -91,11 +91,10 @@ void print_byteblob(TIter iter_begin, TIter iter_end) {
 template<class T>
 void test_round_trip_fixed_precision_big_endian(T val) {
     using namespace nil::crypto3::marshalling;
-    std::size_t units_bits = 8;
+    constexpr static const std::size_t units_bits = 8;
     using unit_type = unsigned char;
     using integral_type = types::integral<nil::marshalling::field_type<nil::marshalling::option::big_endian>, T>;
-    std::size_t unitblob_size =
-        integral_type::bit_length() / units_bits + ((integral_type::bit_length() % units_bits) ? 1 : 0);
+    std::size_t unitblob_size = integral_type::template length<8>();
 
     std::vector<unit_type> cv;
     cv.resize(unitblob_size, 0x00);
@@ -119,11 +118,10 @@ void test_round_trip_fixed_precision_big_endian(T val) {
 template<class T>
 void test_round_trip_fixed_precision_little_endian(T val) {
     using namespace nil::crypto3::marshalling;
-    std::size_t units_bits = 8;
+    constexpr static const std::size_t units_bits = 8;
     using unit_type = unsigned char;
     using integral_type = types::integral<nil::marshalling::field_type<nil::marshalling::option::little_endian>, T>;
-    std::size_t unitblob_size =
-        integral_type::bit_length() / units_bits + ((integral_type::bit_length() % units_bits) ? 1 : 0);
+    std::size_t unitblob_size = integral_type::template length<8>();
 
     std::vector<unit_type> cv;
 

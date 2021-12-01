@@ -94,7 +94,7 @@ template<class T, std::size_t TSize>
 void test_round_trip_fixed_size_container_fixed_precision_big_endian(
     std::array<T, TSize> val_container) {
     using namespace nil::crypto3::marshalling;
-    std::size_t units_bits = 8;
+    constexpr static const std::size_t units_bits = 8;
     using unit_type = unsigned char;
     using integral_type = types::integral<nil::marshalling::field_type<nil::marshalling::option::big_endian>, T>;
 
@@ -102,8 +102,7 @@ void test_round_trip_fixed_size_container_fixed_precision_big_endian(
         nil::marshalling::types::array_list<nil::marshalling::field_type<nil::marshalling::option::little_endian>,
                                             integral_type, nil::marshalling::option::fixed_size_storage<TSize>>;
 
-    std::size_t unitblob_size =
-        integral_type::bit_length() / units_bits + ((integral_type::bit_length() % units_bits) ? 1 : 0);
+    std::size_t unitblob_size = integral_type::template length<units_bits>();
 
     container_type test_val_container;
 
@@ -137,7 +136,7 @@ template<class T, std::size_t TSize>
 void test_round_trip_fixed_size_container_fixed_precision_little_endian(
     std::array<T, TSize> val_container) {
     using namespace nil::crypto3::marshalling;
-    std::size_t units_bits = 8;
+    constexpr static const std::size_t units_bits = 8;
     using unit_type = unsigned char;
     using integral_type = types::integral<nil::marshalling::field_type<nil::marshalling::option::little_endian>, T>;
 
@@ -145,8 +144,7 @@ void test_round_trip_fixed_size_container_fixed_precision_little_endian(
         nil::marshalling::types::array_list<nil::marshalling::field_type<nil::marshalling::option::little_endian>,
                                             integral_type, nil::marshalling::option::fixed_size_storage<TSize>>;
 
-    std::size_t unitblob_size =
-        integral_type::bit_length() / units_bits + ((integral_type::bit_length() % units_bits) ? 1 : 0);
+    std::size_t unitblob_size = integral_type::template length<units_bits>();
 
     container_type test_val_container;
 

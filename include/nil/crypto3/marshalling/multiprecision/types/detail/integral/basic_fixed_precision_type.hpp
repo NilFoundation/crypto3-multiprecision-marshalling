@@ -81,34 +81,31 @@ namespace nil {
                             return value_;
                         }
 
+                        template<std::size_t WordBits=8>
                         static constexpr std::size_t length() {
-                            return max_length();
+                            return max_length<WordBits>();
                         }
 
+                        template<std::size_t WordBits=8>
                         static constexpr std::size_t min_length() {
-                            return min_bit_length() / 8 + ((min_bit_length() % 8) ? 1 : 0);
+                            std::size_t min_bit_length = 
+                                nil::crypto3::multiprecision::backends::min_precision<backend_type>::value ==
+                                    UINT_MAX ?
+                                    INT_MAX :
+                                    nil::crypto3::multiprecision::backends::min_precision<backend_type>::value;
+
+                            return min_bit_length / WordBits + ((min_bit_length % WordBits) ? 1 : 0);
                         }
 
+                        template<std::size_t WordBits=8>
                         static constexpr std::size_t max_length() {
-                            return max_bit_length() / 8 + ((max_bit_length() % 8) ? 1 : 0);
-                        }
+                            std::size_t max_bit_length = 
+                                nil::crypto3::multiprecision::backends::max_precision<backend_type>::value ==
+                                    UINT_MAX ?
+                                    INT_MAX :
+                                    nil::crypto3::multiprecision::backends::max_precision<backend_type>::value;
 
-                        static constexpr std::size_t bit_length() {
-                            return max_bit_length();
-                        }
-
-                        static constexpr std::size_t min_bit_length() {
-                            return nil::crypto3::multiprecision::backends::min_precision<backend_type>::value ==
-                                           UINT_MAX ?
-                                       INT_MAX :
-                                       nil::crypto3::multiprecision::backends::min_precision<backend_type>::value;
-                        }
-
-                        static constexpr std::size_t max_bit_length() {
-                            return nil::crypto3::multiprecision::backends::max_precision<backend_type>::value ==
-                                           UINT_MAX ?
-                                       INT_MAX :
-                                       nil::crypto3::multiprecision::backends::max_precision<backend_type>::value;
+                            return max_bit_length / WordBits + ((max_bit_length % WordBits) ? 1 : 0);
                         }
 
                         static constexpr serialized_type to_serialized(value_type val) {
@@ -133,7 +130,7 @@ namespace nil {
                         template<typename TIter>
                         void read_no_status(TIter &iter) {
                             value_ = crypto3::marshalling::processing::
-                                read_data<bit_length(), value_type, typename base_impl_type::endian_type>(iter);
+                                read_data<length<1>(), value_type, typename base_impl_type::endian_type>(iter);
                         }
 
                         template<typename TIter>
@@ -150,7 +147,7 @@ namespace nil {
 
                         template<typename TIter>
                         void write_no_status(TIter &iter) const {
-                            crypto3::marshalling::processing::write_data<bit_length(),
+                            crypto3::marshalling::processing::write_data<length<1>(),
                                                                          typename base_impl_type::endian_type>(value_,
                                                                                                                iter);
                         }
