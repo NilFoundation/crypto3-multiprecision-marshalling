@@ -30,7 +30,6 @@
 
 #include <nil/crypto3/marshalling/multiprecision/processing/detail/size_to_type.hpp>
 
-
 namespace nil {
     namespace crypto3 {
         namespace marshalling {
@@ -40,21 +39,15 @@ namespace nil {
                 template<std::size_t BitLength, bool IsSigned = false, bool IsChecked = false>
                 struct size_to_type {
                     using type = multiprecision::number<
-                        multiprecision::cpp_int_backend<
-                            BitLength,
-                            BitLength,
-                            detail::select_magnitude_type<IsSigned>(),
-                            detail::select_checked_type<IsChecked>(),
-                            void
-                        >
-                    >;
+                        multiprecision::cpp_int_backend<BitLength, BitLength, detail::select_magnitude_type<IsSigned>(),
+                                                        detail::select_checked_type<IsChecked>(), void>>;
                 };
 
                 /// @endcond
 
             }    // namespace processing
-        }    // namespace marshalling
-    }    // namespace crypto3
+        }        // namespace marshalling
+    }            // namespace crypto3
 }    // namespace nil
 
 #endif    // CRYPTO3_MARSHALLING_PROCESSING_SIZE_TO_TYPE_HPP

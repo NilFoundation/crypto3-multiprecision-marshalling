@@ -33,7 +33,6 @@
 #include <nil/crypto3/marshalling/multiprecision/processing/size_to_type.hpp>
 #include <nil/crypto3/marshalling/multiprecision/types/integral.hpp>
 
-
 namespace nil {
     namespace crypto3 {
         namespace marshalling {
@@ -45,14 +44,15 @@ namespace nil {
                         using base_impl_type = TFieldBase;
 
                         static_assert(nil::detail::is_tuple<TMembers>::value,
-                                    "TMembers is expected to be a tuple of BitfieldMember<...>");
+                                      "TMembers is expected to be a tuple of BitfieldMember<...>");
 
                         static_assert(1U < std::tuple_size<TMembers>::value,
-                                    "Number of members is expected to be at least 2.");
+                                      "Number of members is expected to be at least 2.");
 
-                        static constexpr std::size_t total_bits = nil::marshalling::types::detail::calc_bit_length<TMembers>();
+                        static constexpr std::size_t total_bits =
+                            nil::marshalling::types::detail::calc_bit_length<TMembers>();
                         static_assert((total_bits % std::numeric_limits<std::uint8_t>::digits) == 0,
-                                    "Wrong number of total bits, it should be devidable by 8");
+                                      "Wrong number of total bits, it should be devidable by 8");
 
                         static const std::size_t total_bytes = total_bits / std::numeric_limits<std::uint8_t>::digits;
                         static_assert(0U < total_bytes, "Serialised length is expected to be greater than 0");
@@ -98,26 +98,18 @@ namespace nil {
                                 return nil::marshalling::status_type::not_enough_data;
                             }
 
-                            serialized_type serValue = processing::read_data<
-                                total_bits,
-                                serialized_type,
-                                endian_type
-                            >(iter);
+                            serialized_type serValue =
+                                processing::read_data<total_bits, serialized_type, endian_type>(iter);
                             nil::marshalling::status_type es = nil::marshalling::status_type::success;
                             nil::marshalling::processing::tuple_for_each_with_template_param_idx(
-                                members_,
-                                read_helper(serValue, es)
-                            );
+                                members_, read_helper(serValue, es));
                             return es;
                         }
 
                         template<typename TIter>
                         void read_no_status(TIter &iter) {
-                            serialized_type serValue = processing::read_data<
-                                total_bits,
-                                serialized_type,
-                                endian_type
-                            >(iter);
+                            serialized_type serValue =
+                                processing::read_data<total_bits, serialized_type, endian_type>(iter);
                             nil::marshalling::processing::tuple_for_each_with_template_param_idx(
                                 members_, read_no_status_helper(serValue));
                         }
@@ -133,10 +125,7 @@ namespace nil {
                             nil::marshalling::processing::tuple_for_each_with_template_param_idx(
                                 members_, write_helper(serValue, es));
                             if (es == nil::marshalling::status_type::success) {
-                                processing::write_data<
-                                    total_bits,
-                                    endian_type
-                                >(serValue, iter);
+                                processing::write_data<total_bits, endian_type>(serValue, iter);
                             }
                             return es;
                         }
@@ -166,11 +155,13 @@ namespace nil {
                         }
 
                         static constexpr bool is_version_dependent() {
-                            return nil::marshalling::types::detail::common_funcs::are_members_version_dependent<value_type>();
+                            return nil::marshalling::types::detail::common_funcs::are_members_version_dependent<
+                                value_type>();
                         }
 
                         bool set_version(version_type version) {
-                            return nil::marshalling::types::detail::common_funcs::set_version_for_members(value(), version);
+                            return nil::marshalling::types::detail::common_funcs::set_version_for_members(value(),
+                                                                                                          version);
                         }
 
                     private:
@@ -186,14 +177,18 @@ namespace nil {
                                 }
 
                                 using field_type = typename std::decay<TFieldParam>::type;
-                                static const auto Pos = nil::marshalling::types::detail::get_member_shift_pos<TIdx, value_type>();
+                                static const auto Pos =
+                                    nil::marshalling::types::detail::get_member_shift_pos<TIdx, value_type>();
                                 static const auto Mask =
-                                    (static_cast<serialized_type>(1U) << nil::marshalling::types::detail::bitfield_member_length_retriever<field_type>::value)- 1;
+                                    (static_cast<serialized_type>(1U)
+                                     << nil::marshalling::types::detail::bitfield_member_length_retriever<
+                                            field_type>::value) -
+                                    1;
 
                                 auto fieldSerValue = static_cast<serialized_type>((value_ >> Pos) & Mask);
 
                                 static_assert(field_type::min_length() == field_type::max_length(),
-                                            "basic_bitfield doesn't support members with variable length");
+                                              "basic_bitfield doesn't support members with variable length");
 
                                 static const std::size_t max_length = field_type::max_length();
                                 std::uint8_t buf[max_length];
@@ -204,7 +199,8 @@ namespace nil {
 
                                 auto readIter = std::cbegin(buf);
                                 es_ = field.read(readIter, field_type::bit_length());
-                                using unsigned_seriealized_type = typename crypto3::marshalling::processing::size_to_type<128>::type;
+                                using unsigned_seriealized_type =
+                                    typename crypto3::marshalling::processing::size_to_type<128>::type;
                             }
 
                         private:
@@ -221,14 +217,15 @@ namespace nil {
                             void operator()(TFieldParam &&field) {
                                 using field_type = typename std::decay<decltype(field)>::type;
                                 using FieldOptions = typename field_type::parsed_options_type;
-                                static const auto Pos = nil::marshalling::types::detail::get_member_shift_pos<TIdx, value_type>();
-                                static const auto Mask
-                                    = (static_cast<serialized_type>(1) << FieldOptions::fixed_bit_length) - 1;
+                                static const auto Pos =
+                                    nil::marshalling::types::detail::get_member_shift_pos<TIdx, value_type>();
+                                static const auto Mask =
+                                    (static_cast<serialized_type>(1) << FieldOptions::fixed_bit_length) - 1;
 
                                 auto fieldSerValue = static_cast<serialized_type>((value_ >> Pos) & Mask);
 
                                 static_assert(field_type::min_length() == field_type::max_length(),
-                                            "basic_bitfield doesn't support members with variable length");
+                                              "basic_bitfield doesn't support members with variable length");
 
                                 std::uint8_t buf[field_type::max_length()];
                                 auto writeIter = std::begin(buf);
@@ -245,7 +242,8 @@ namespace nil {
 
                         class write_helper {
                         public:
-                            write_helper(serialized_type &val, nil::marshalling::status_type &es) : value_(val), es_(es) {
+                            write_helper(serialized_type &val, nil::marshalling::status_type &es) :
+                                value_(val), es_(es) {
                             }
 
                             template<std::size_t TIdx, typename TFieldParam>
@@ -257,13 +255,14 @@ namespace nil {
                                 using field_type = typename std::decay<decltype(field)>::type;
 
                                 static_assert(field_type::min_length() == field_type::max_length(),
-                                            "basic_bitfield supports fixed length members only.");
+                                              "basic_bitfield supports fixed length members only.");
 
                                 std::uint8_t buf[field_type::max_length()];
                                 auto writeIter = std::begin(buf);
 
                                 nil::marshalling::status_type status;
-                                es_ = field.write(writeIter, field_type::bit_length()); // TODO: len as template param?
+                                es_ =
+                                    field.write(writeIter, field_type::bit_length());    // TODO: len as template param?
 
                                 if (es_ != nil::marshalling::status_type::success) {
                                     return;
@@ -271,16 +270,17 @@ namespace nil {
 
                                 auto readIter = std::cbegin(buf);
                                 serialized_type fieldSerValue =
-                                    processing::read_data<
-                                        field_type::bit_length(),
-                                        serialized_type,
-                                        typename field_type::endian_type
-                                    >(readIter);
+                                    processing::read_data<field_type::bit_length(),
+                                                          serialized_type,
+                                                          typename field_type::endian_type>(readIter);
 
-
-                                static const auto Pos = nil::marshalling::types::detail::get_member_shift_pos<TIdx, value_type>();
+                                static const auto Pos =
+                                    nil::marshalling::types::detail::get_member_shift_pos<TIdx, value_type>();
                                 static const auto Mask =
-                                    (static_cast<serialized_type>(1U) << nil::marshalling::types::detail::bitfield_member_length_retriever<field_type>::value) - 1;
+                                    (static_cast<serialized_type>(1U)
+                                     << nil::marshalling::types::detail::bitfield_member_length_retriever<
+                                            field_type>::value) -
+                                    1;
 
                                 static const auto ClearMask = ~(Mask << Pos);
 
@@ -306,7 +306,7 @@ namespace nil {
                                 using field_type = typename std::decay<decltype(field)>::type;
 
                                 static_assert(field_type::min_length() == field_type::max_length(),
-                                            "basic_bitfield supports fixed length members only.");
+                                              "basic_bitfield supports fixed length members only.");
 
                                 static const std::size_t max_length = field_type::max_length();
                                 std::uint8_t buf[max_length];
@@ -314,16 +314,15 @@ namespace nil {
                                 field.write_no_status(writeIter);
 
                                 auto readIter = std::cbegin(buf);
-                                auto fieldSerValue = processing::read_data<
-                                        field_type::bit_length(),
-                                        serialized_type,
-                                        typename field_type::endian_type
-                                    >(readIter);
+                                auto fieldSerValue = processing::read_data<field_type::bit_length(),
+                                                                           serialized_type,
+                                                                           typename field_type::endian_type>(readIter);
 
                                 using FieldOptions = typename field_type::parsed_options_type;
-                                static const auto Pos = nil::marshalling::types::detail::get_member_shift_pos<TIdx, value_type>();
-                                static const auto Mask
-                                    = (static_cast<serialized_type>(1) << FieldOptions::fixed_bit_length) - 1;
+                                static const auto Pos =
+                                    nil::marshalling::types::detail::get_member_shift_pos<TIdx, value_type>();
+                                static const auto Mask =
+                                    (static_cast<serialized_type>(1) << FieldOptions::fixed_bit_length) - 1;
 
                                 static const auto ClearMask = ~(Mask << Pos);
 
@@ -355,9 +354,9 @@ namespace nil {
                     };
 
                 }    // namespace detail
-            }    // namespace types
-        }    // namespace marshalling
-    }    // namespace crypto3
+            }        // namespace types
+        }            // namespace marshalling
+    }                // namespace crypto3
 }    // namespace nil
 
 #endif    // CRYPTO3_MARSHALLING_BASIC_BITFIELD_DEFINITION_HPP

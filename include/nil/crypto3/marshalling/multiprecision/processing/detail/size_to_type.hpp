@@ -28,7 +28,6 @@
 
 #include <nil/crypto3/multiprecision/number.hpp>
 
-
 namespace nil {
     namespace crypto3 {
         namespace marshalling {
@@ -59,9 +58,9 @@ namespace nil {
                     /// @endcond
 
                 }    // namespace detail
-            }    // namespace processing
-        }    // namespace marshalling
-    }    // namespace crypto3
+            }        // namespace processing
+        }            // namespace marshalling
+    }                // namespace crypto3
 }    // namespace nil
 
 #endif    // CRYPTO3_MARSHALLING_PROCESSING_SIZE_TO_TYPE_DETAIL_HPP

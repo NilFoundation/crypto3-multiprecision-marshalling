@@ -34,7 +34,6 @@
 #include <nil/crypto3/marshalling/multiprecision/types/adapter/fixed_bit_length.hpp>
 #include <nil/crypto3/marshalling/multiprecision/types/detail/bitfield/basic_type.hpp>
 
-
 namespace nil {
     namespace crypto3 {
         namespace marshalling {
@@ -105,17 +104,11 @@ namespace nil {
                 /// @see @ref MARSHALLING_FIELD_MEMBERS_ACCESS()
                 /// @see @ref MARSHALLING_FIELD_MEMBERS_ACCESS_NOTEMPLATE()
                 template<typename TFieldBase, typename TMembers, typename... TOptions>
-                class bitfield
-                    : private nil::marshalling::types::detail::adapt_basic_field_type<
-                        detail::basic_bitfield<TFieldBase, TMembers>,
-                        TOptions...
-                    > {
+                class bitfield : private nil::marshalling::types::detail::
+                                     adapt_basic_field_type<detail::basic_bitfield<TFieldBase, TMembers>, TOptions...> {
 
-                    using base_impl_type =
-                        nil::marshalling::types::detail::adapt_basic_field_type<
-                            detail::basic_bitfield<TFieldBase, TMembers>,
-                            TOptions...
-                        >;
+                    using base_impl_type = nil::marshalling::types::detail::
+                        adapt_basic_field_type<detail::basic_bitfield<TFieldBase, TMembers>, TOptions...>;
 
                 public:
                     /// @brief endian_type used for serialization.
@@ -267,32 +260,36 @@ namespace nil {
                         !parsed_options_type::has_ser_offset,
                         "nil::marshalling::option::num_value_ser_offset option is not applicable to bitfield field");
                     static_assert(!parsed_options_type::has_fixed_length_limit,
-                                "nil::marshalling::option::fixed_length option is not applicable to bitfield field");
-                    static_assert(!parsed_options_type::has_fixed_bit_length_limit,
-                                "nil::marshalling::option::fixed_bit_length option is not applicable to bitfield field");
+                                  "nil::marshalling::option::fixed_length option is not applicable to bitfield field");
+                    static_assert(
+                        !parsed_options_type::has_fixed_bit_length_limit,
+                        "nil::marshalling::option::fixed_bit_length option is not applicable to bitfield field");
                     static_assert(!parsed_options_type::has_var_length_limits,
-                                "nil::marshalling::option::var_length option is not applicable to bitfield field");
-                    static_assert(!parsed_options_type::has_sequence_elem_length_forcing,
-                                "nil::marshalling::option::SequenceElemLengthForcingEnabled option is not applicable to "
-                                "bitfield field");
+                                  "nil::marshalling::option::var_length option is not applicable to bitfield field");
                     static_assert(
-                        !parsed_options_type::has_sequence_size_forcing,
-                        "nil::marshalling::option::sequence_size_forcing_enabled option is not applicable to bitfield field");
-                    static_assert(
-                        !parsed_options_type::has_sequence_length_forcing,
-                        "nil::marshalling::option::SequenceLengthorcingEnabled option is not applicable to bitfield field");
+                        !parsed_options_type::has_sequence_elem_length_forcing,
+                        "nil::marshalling::option::SequenceElemLengthForcingEnabled option is not applicable to "
+                        "bitfield field");
+                    static_assert(!parsed_options_type::has_sequence_size_forcing,
+                                  "nil::marshalling::option::sequence_size_forcing_enabled option is not applicable to "
+                                  "bitfield field");
+                    static_assert(!parsed_options_type::has_sequence_length_forcing,
+                                  "nil::marshalling::option::SequenceLengthorcingEnabled option is not applicable to "
+                                  "bitfield field");
                     static_assert(
                         !parsed_options_type::has_sequence_fixed_size,
                         "nil::marshalling::option::sequence_fixed_size option is not applicable to bitfield field");
-                    static_assert(!parsed_options_type::has_sequence_fixed_size_use_fixed_size_storage,
-                                "nil::marshalling::option::SequenceFixedSizeUseFixedSizeStorage option is not applicable "
-                                "to bitfield field");
                     static_assert(
-                        !parsed_options_type::has_sequence_size_field_prefix,
-                        "nil::marshalling::option::sequence_size_field_prefix option is not applicable to bitfield field");
-                    static_assert(!parsed_options_type::has_sequence_ser_length_field_prefix,
-                                "nil::marshalling::option::sequence_ser_length_field_prefix option is not applicable to "
-                                "bitfield field");
+                        !parsed_options_type::has_sequence_fixed_size_use_fixed_size_storage,
+                        "nil::marshalling::option::SequenceFixedSizeUseFixedSizeStorage option is not applicable "
+                        "to bitfield field");
+                    static_assert(!parsed_options_type::has_sequence_size_field_prefix,
+                                  "nil::marshalling::option::sequence_size_field_prefix option is not applicable to "
+                                  "bitfield field");
+                    static_assert(
+                        !parsed_options_type::has_sequence_ser_length_field_prefix,
+                        "nil::marshalling::option::sequence_ser_length_field_prefix option is not applicable to "
+                        "bitfield field");
                     static_assert(
                         !parsed_options_type::has_sequence_elem_ser_length_field_prefix,
                         "nil::marshalling::option::sequence_elem_ser_length_field_prefix option is not applicable to "
@@ -301,12 +298,14 @@ namespace nil {
                         !parsed_options_type::has_sequence_elem_fixed_ser_length_field_prefix,
                         "nil::marshalling::option::SequenceElemSerLengthFixedFieldPrefix option is not applicable to "
                         "bitfield field");
-                    static_assert(!parsed_options_type::has_sequence_trailing_field_suffix,
-                                "nil::marshalling::option::sequence_trailing_field_suffix option is not applicable to "
-                                "bitfield field");
-                    static_assert(!parsed_options_type::has_sequence_termination_field_suffix,
-                                "nil::marshalling::option::sequence_termination_field_suffix option is not applicable to "
-                                "bitfield field");
+                    static_assert(
+                        !parsed_options_type::has_sequence_trailing_field_suffix,
+                        "nil::marshalling::option::sequence_trailing_field_suffix option is not applicable to "
+                        "bitfield field");
+                    static_assert(
+                        !parsed_options_type::has_sequence_termination_field_suffix,
+                        "nil::marshalling::option::sequence_termination_field_suffix option is not applicable to "
+                        "bitfield field");
                     static_assert(
                         !parsed_options_type::has_fixed_size_storage,
                         "nil::marshalling::option::fixed_size_storage option is not applicable to bitfield field");
@@ -317,15 +316,18 @@ namespace nil {
                         !parsed_options_type::has_scaling_ratio,
                         "nil::marshalling::option::scaling_ratio_type option is not applicable to bitfield field");
                     static_assert(!parsed_options_type::has_units,
-                                "nil::marshalling::option::Units option is not applicable to bitfield field");
-                    static_assert(!parsed_options_type::has_orig_data_view,
-                                "nil::marshalling::option::orig_data_view option is not applicable to bitfield field");
-                    static_assert(!parsed_options_type::has_multi_range_validation,
-                                "nil::marshalling::option::valid_num_value_range (or similar) option is not applicable "
-                                "to bitfield field");
-                    static_assert(!parsed_options_type::has_versions_range,
-                                "nil::marshalling::option::exists_between_versions (or similar) option is not applicable "
-                                "to bitfield field");
+                                  "nil::marshalling::option::Units option is not applicable to bitfield field");
+                    static_assert(
+                        !parsed_options_type::has_orig_data_view,
+                        "nil::marshalling::option::orig_data_view option is not applicable to bitfield field");
+                    static_assert(
+                        !parsed_options_type::has_multi_range_validation,
+                        "nil::marshalling::option::valid_num_value_range (or similar) option is not applicable "
+                        "to bitfield field");
+                    static_assert(
+                        !parsed_options_type::has_versions_range,
+                        "nil::marshalling::option::exists_between_versions (or similar) option is not applicable "
+                        "to bitfield field");
                     static_assert(
                         !parsed_options_type::has_invalid_by_default,
                         "nil::marshalling::option::invalid_by_default option is not applicable to bitfield field");
@@ -360,7 +362,7 @@ namespace nil {
                 /// @related bitfield
                 template<typename TFieldBase, typename TMembers, typename... TOptions>
                 bool operator<(const bitfield<TFieldBase, TMembers, TOptions...> &field1,
-                            const bitfield<TFieldBase, TMembers, TOptions...> &field2) {
+                               const bitfield<TFieldBase, TMembers, TOptions...> &field2) {
                     return field1.value() < field2.value();
                 }
 
@@ -383,8 +385,8 @@ namespace nil {
                 }
 
             }    // namespace types
-        }    // namespace marshalling
-    }    // namespace crypto3
+        }        // namespace marshalling
+    }            // namespace crypto3
 }    // namespace nil
 
 #endif    // CRYPTO3_MARSHALLING_BITFIELD_HPP
