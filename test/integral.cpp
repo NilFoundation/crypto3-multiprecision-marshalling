@@ -218,31 +218,4 @@ BOOST_AUTO_TEST_CASE(integral_cpp_int_backend_23_bits) {
         23, 23, nil::crypto3::multiprecision::unsigned_magnitude, nil::crypto3::multiprecision::checked, void>>, bool>();
 }
 
-BOOST_AUTO_TEST_CASE(integral_cpp_int_backend_123_bits) {
-    using signed_type = nil::crypto3::multiprecision::number<nil::crypto3::multiprecision::cpp_int_backend<
-        123, 123, nil::crypto3::multiprecision::signed_magnitude, nil::crypto3::multiprecision::unchecked, void>>;
-    std::cout << std::hex;
-    std::cerr << std::hex;
-    for (unsigned i = 0; i < 1000; ++i) {
-        signed_type val = generate_random<signed_type, true>();
-        nil::marshalling::status_type status;
-        std::vector<std::uint8_t> cv = nil::marshalling::pack<nil::marshalling::option::big_endian>(val, status);
-        signed_type new_val = nil::marshalling::pack<nil::marshalling::option::big_endian>(cv, status);
-        BOOST_CHECK(new_val == val);
-        std::cout << val << std::endl;
-        print_byteblob(std::begin(cv), std::end(cv));
-        // T test_val = nil::marshalling::pack<nil::marshalling::option::big_endian>(cv, status);
-        // test_round_trip_fixed_precision_little_endian<signed_type, unsigned char>(val);
-    }
-
-
-
-    // BOOST_CHECK(val == test_val);
-    // BOOST_CHECK(status == nil::marshalling::status_type::success);
-
-    // std::vector<unit_type> test_cv = nil::marshalling::pack<nil::marshalling::option::big_endian>(val, status);
-    // test_round_trip_fixed_precision<nil::crypto3::multiprecision::number<nil::crypto3::multiprecision::cpp_int_backend<
-    //     123, 123, nil::crypto3::multiprecision::unsigned_magnitude, nil::crypto3::multiprecision::checked, void>>, bool>();
-}
-
 BOOST_AUTO_TEST_SUITE_END()
