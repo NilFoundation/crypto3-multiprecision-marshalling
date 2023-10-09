@@ -199,8 +199,6 @@ namespace nil {
 
                                 auto readIter = std::cbegin(buf);
                                 es_ = field.read(readIter, field_type::bit_length());
-                                using unsigned_seriealized_type =
-                                    typename crypto3::marshalling::processing::size_to_type<128>::type;
                             }
 
                         private:
