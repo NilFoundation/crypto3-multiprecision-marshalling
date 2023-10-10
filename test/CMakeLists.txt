@@ -19,11 +19,26 @@ cm_test_link_libraries(${CMAKE_WORKSPACE_NAME}_${CURRENT_PROJECT_NAME}
                        crypto3::multiprecision
                        ${CMAKE_WORKSPACE_NAME}::core)
 
+option(ENABLE_JUNIT_TESTS_OUTPUT "Enable JUnit output for tests" FALSE)
+set(TEST_RESULTS_DIR "${CMAKE_BINARY_DIR}/junit_results" CACHE STRING "Directory to save test results in JUnit format")
+
 macro(define_marshalling_test test)
 
     get_filename_component(name ${test} NAME)
 
-    cm_test(NAME marshalling_${name}_test SOURCES ${test}.cpp)
+    set(test_name "marshalling_${name}_test")
+
+    set(additional_args "")
+    if(ENABLE_JUNIT_TESTS_OUTPUT)
+        set(LOGS_DIR "${TEST_RESULTS_DIR}/logs")
+        set(REPORTS_DIR "${TEST_RESULTS_DIR}/reports")
+        file(MAKE_DIRECTORY ${LOGS_DIR} ${REPORTS_DIR})
+
+        set(additional_args "--log_format=JUNIT --log_sink=${LOGS_DIR}/${test_name}.xml --report_sink=${REPORTS_DIR}/${test_name}.xml")
+    endif()
+
+    cm_test(NAME marshalling_${name}_test SOURCES ${test}.cpp ARGS ${additional_args})
+
 
     target_include_directories(marshalling_${name}_test PRIVATE
                                "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
