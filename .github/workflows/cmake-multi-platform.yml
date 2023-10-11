@@ -15,8 +15,27 @@ env:
   BOOST_VERSION: '1.80.0'
 
 jobs:
+  setup_matrix:
+    # env's can not be used outside of steps (https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#env)
+    # To make matrix use OS versions defined in env, we need to dynamically create it inside extra job
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - id: set-matrix
+      run: |
+        echo "matrix={
+          \"os\": [\"ubuntu-$UBUNTU_VERSION\", \"macos-$MACOS_VERSION\"],
+          \"build_type\": [\"Release\", \"Debug\"],
+          \"cpp_compiler\": [\"g++\", \"clang++\"]
+        }" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: setup_matrix
     runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix: ${{fromJson(needs.setup_matrix.outputs.matrix)}}
 
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
