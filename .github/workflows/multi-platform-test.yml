@@ -1,0 +1,328 @@
+name: Build and test on multiple platforms
+
+on:
+  repository_dispatch:
+    types:
+      - test_pr
+      - test_syncwith_pr
+  workflow_dispatch:
+    inputs:
+      submodules_json:
+        description: "JSON with submodules' repo names and SHAs"
+        required: false
+
+env:
+  UMBRELLA_REPO: 'NilFoundation/crypto3'
+  TESTS_ARTIFACT_NAME: 'test-results'
+  CI_CD_SHA: 339ac5bb2df2a801747537ca6956fa4114a63dd9
+
+
+jobs:
+  set-pending-status:
+    name: "Set Pending Status for Build"
+    runs-on: ubuntu-latest
+
+    outputs:
+      build-status-context: ${{ steps.set-build-status.outputs.build-status-context }}
+      build-status-target-url: ${{ steps.set-build-status.outputs.build-status-target-url }}
+
+    steps:
+    - name: Print the entire event payload
+      run: cat $GITHUB_EVENT_PATH && echo "### Bye world! :rocket:" >> $GITHUB_STEP_SUMMARY
+
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: echo "$GITHUB_CONTEXT"
+
+    # - name: Make extra check run
+    #   run: |
+    #     gh api repos/NilFoundation/crypto3-multiprecision-marshalling/check-runs \
+    #       -X POST \
+    #       -F name="example check run from dispatched workflow" \
+    #       -F head_sha="${{ github.sha }}" \
+    #       -F status="completed" \
+    #       -F conclusion="success" \
+    #       -F completed_at="2023-10-26T13:13:13Z"
+    #   env:
+    #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # - name: Set build pending status
+    #   id: set-build-status
+    #   run: |
+    #     build_status_context="${{ github.workflow }} / Matrix Build"
+    #     target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+    #     gh api repos/${{ github.repository }}/statuses/${{ github.sha }} \
+    #       -X POST \
+    #       -f state=pending \
+    #       -f "target_url=$target_url" \
+    #       -f "description=Building in progress" \
+    #       -f "context=$build_status_context"
+
+    #     echo "build-status-context=$build_status_context" >> $GITHUB_OUTPUT
+    #     echo "build-status-target-url=$target_url" >> $GITHUB_OUTPUT
+    #   env:
+    #     GH_TOKEN: ${{ github.token }}
+
+
+  build-and-test:
+    name: "Build and Test using Matrix"
+    needs: set-pending-status
+    env:
+      # The least version supported by both matrix.os
+      BOOST_VERSION: '1.81.0'
+
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
+      fail-fast: false
+
+      # Set up a matrix to run the following 4 configurations, each of them in both Release and Debug builds:
+      # 1. <Linux, Release, latest G++ compiler toolchain on the default runner image, default generator>
+      # 2. <Linux, Release, latest Clang++ compiler toolchain on the default runner image, default generator>
+      # 3. <MacOS, Release, latest G++ compiler toolchain on the default runner image, default generator>
+      # 4. <MacOS, Release, latest Clang++ compiler toolchain on the default runner image, default generator>
+      matrix:
+        # os: [ubuntu-22.04, macos-12]
+        os: [ubuntu-22.04]
+        cpp_compiler: [g++, clang++]
+        build_type: [Debug]
+        # build_type: [Release, Debug]
+
+    steps:
+    - name: Checkout umbrella crypto3 repository
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ env.UMBRELLA_REPO }}
+        submodules: 'true' # Using true fetches only the top-level submodules
+        fetch-depth: 1 # Fetch only the latest commit on the triggered branch/ref
+
+    - name: Checkout CI/CD repository
+      uses: actions/checkout@v4
+      with:
+        repository: x-mass/ci_cd
+        ref: ${{ env.CI_CD_SHA }}
+        path: .ci_cd
+
+
+    - name: Checkout submodules to specified commits
+      if: github.event.inputs.submodules_json  != ''
+      working-directory: .ci_cd
+      run: ./checkout_submodules.sh '${{ github.event.inputs.submodules_json }}'
+
+    - name: Determine submodule path
+      id: get-submodule-path
+      run: |
+        # Parsing .gitmodules to find the path of the submodule repository.
+        submodule_path=$(git config --file .gitmodules --get-regexp path | awk -v repo_name=${{ github.event.repository.name }} '$0 ~ repo_name {print $2}')
+        echo "submodule-path=$submodule_path" >> $GITHUB_OUTPUT
+
+    - name: Checkout current repository as umbrella submodule lib
+      uses: actions/checkout@v4
+      with:
+        path: ${{ steps.get-submodule-path.outputs.submodule-path }}
+        fetch-depth: 1
+
+    - name: Set usefull strings
+      # Turn input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
+      id: strings
+      shell: bash
+      run: |
+        # CMake locations
+        umbrella_build_dir="${{ github.workspace }}/build"
+        submodule_build_dir="$umbrella_build_dir/${{ steps.get-submodule-path.outputs.submodule-path }}"
+        echo "umbrella-build-dir=$umbrella_build_dir" >> "$GITHUB_OUTPUT"
+        echo "submodule-build-dir=$submodule_build_dir" >> "$GITHUB_OUTPUT"
+        echo "submodule-test-dir=$submodule_build_dir/test" >> "$GITHUB_OUTPUT"
+
+        # Dependencies dir location
+        echo "dependencies-dir=${{ github.workspace }}/../dependencies" >> "$GITHUB_OUTPUT"
+
+        # Get platform version
+        os_version=${{ matrix.os }}
+        platform_version=${os_version##*-}
+        echo "platform-version=${platform_version}" >> $GITHUB_OUTPUT
+
+    - name: Set up dependencies directory
+      run: |
+        mkdir -p "${{ steps.strings.outputs.dependencies-dir }}"
+
+    - name: Install boost
+      uses: MarkusJx/install-boost@v2.4.4
+      id: install-boost
+      with:
+          boost_version: ${{ env.BOOST_VERSION }}
+          # Extract version number from matrix.os by replacing os_name-
+          # A list of supported versions can be found here:
+          # https://github.com/MarkusJx/prebuilt-boost/blob/main/versions-manifest.json
+          platform_version: ${{ steps.strings.outputs.platform-version }}
+          boost_install_dir: ${{ steps.strings.outputs.dependencies-dir }}
+
+    - name: Configure CMake
+      run: >
+        cmake -B ${{ steps.strings.outputs.umbrella-build-dir }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DBUILD_TESTS=TRUE
+        -DENABLE_JUNIT_TEST_OUTPUT=TRUE
+        -S ${{ github.workspace }}
+      env:
+        BOOST_ROOT: "${{ steps.install-boost.outputs.BOOST_ROOT }}"
+
+    - name: Build all inside submodule
+      working-directory: ${{ steps.strings.outputs.submodule-build-dir }}
+      run: |
+        #TODO: use cmake build instead?
+        make all
+
+    - name: Run tests inside submodule test dir
+      working-directory: ${{ steps.strings.outputs.submodule-test-dir }}
+      # Not considering failing tests bad. We will compare diff instead
+      run: ctest - || exit 0
+
+    - name: Move test results to dir for uploading
+      id: prepare-for-uploading
+      run: |
+        artifact_dir=$(realpath ${{ github.workspace }}/../results_for_uploading)
+        custom_tests_dir=$artifact_dir/${{ matrix.os }}/${{ matrix.cpp_compiler }}/${{ matrix.build_type }}
+        mkdir -p $custom_tests_dir
+        mv ${{ steps.strings.outputs.submodule-test-dir }}/junit_results/* $custom_tests_dir
+        echo "artifact-dir=$artifact_dir" >> "$GITHUB_OUTPUT"
+
+    - name: Upload tests JUnit results
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ env.TESTS_ARTIFACT_NAME }}
+        path: ${{ steps.prepare-for-uploading.outputs.artifact-dir }}
+
+
+  # check-build-success:
+  #   name: "Check Build Success"
+  #   needs:
+  #     - build-and-test
+  #     - set-pending-status
+  #   runs-on: ubuntu-latest
+
+  #   if: always()
+
+  #   steps:
+  #   - name: Check matrix results and update commit status
+  #     run: |
+  #       gh api repos/${{ github.repository }}/statuses/${{ github.event.inputs.ref }} \
+  #         -X POST \
+  #         -f "state=${{ needs.build-and-test.result }}" \
+  #         -f "target_url=${{ needs.set-pending-status.outputs.build-status-target-url }}" \
+  #         -f "description=Build ${{ needs.build-and-test.result }}" \
+  #         -f "context=${{ needs.set-pending-status.outputs.build-status-context }}"
+  #     env:
+  #       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # TODO: move publishing to another worflow in accordance with https://github.com/EnricoMi/publish-unit-test-result-action#support-fork-repositories-and-dependabot-branches
+  # publish-test-results:
+  #   name: "Publish Tests Results"
+  #   needs: build-and-test
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     checks: write
+
+  #     # only needed unless run with comment_mode: off
+  #     pull-requests: write
+
+  #   steps:
+  #   - name: Download Artifacts
+  #     uses: actions/download-artifact@v3
+
+  #   - name: Publish Test Results
+  #     uses: EnricoMi/publish-unit-test-result-action@v2
+  #     with:
+  #       files: "${{ env.TESTS_ARTIFACT_NAME }}/**/*.xml"
+  #       test_file_prefix: "+test/"  # This could be used for files annotation, but Boost JUNIT output is insufficient for it (no file, line properties)
+  #       report_individual_runs: true
+  #       check_run_annotations_branch: "*"
+  #       compare_to_earlier_commit: false  # compares to previous commit within PR anyway
+
+
+  # compare-results-with-master:
+  #   name: Compare Results with Master
+  #   needs: build-and-test
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - name: Authenticate with GitHub CLI
+  #       run: |
+  #         gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
+
+  #     - name: Get last artifact ID from master branch
+  #       id: get-master-artifact-id
+  #       run: |
+  #         workflow_run_id=$(gh api repos/${{ github.repository }}/actions/runs --jq '.workflow_runs[] | select(.head_branch=="master") | .id' | head -1)
+  #         artifact_id=$(gh api repos/${{ github.repository }}/actions/runs/$workflow_run_id/artifacts --jq '.artifacts[] | select(.name=="test-results") | .id' | head -1)
+
+  #         echo "artifact-id=$artifact_id" >> "$GITHUB_OUTPUT"
+
+  #     - name: Download test artifact from master
+  #       id: download-master-tests
+  #       if: steps.get-master-artifact-id.artifact-id != ''
+  #       run: |
+  #         master_artifact_archieve=$(realpath ${{ github.workspace }}/../master_artifact.zip)
+  #         master_artifact_dir=$(realpath ${{ github.workspace }}/../master_test_results)
+  #         gh api repos/${{ github.repository }}/actions/artifacts/${{ steps.get-master-artifact-id.artifact-id }}/zip --output $master_artifact_archieve
+  #         unzip $master_artifact_archieve -d $master_artifact_dir
+  #         echo "unzipped-result=$master_artifact_dir" >> "$GITHUB_OUTPUT"
+
+  #     - name: Download test results artifact
+  #       id: download-test-results
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         path: ${{ github.workspace }}/../current_test_results
+  #         name: ${{ env.TESTS_ARTIFACT_NAME }}
+
+  #     - name: List all test files
+  #       run: find ${{ steps.download-test-results.outputs.download-path }}
+
+  #     - name: Checkout CI/CD repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         repository: x-mass/ci_cd
+  #         ref: 21f6fcf40f5230a4796707fcffc8440edf264e30
+  #         path: .ci_cd
+
+  #     - name: Run differ
+  #       id: differ
+  #       working-directory: .ci_cd
+  #       run: |
+  #         # Reporter could proccess only relative paths
+  #         prev_results_dir="${{ steps.download-master-tests.outputs.unzipped-result }}"
+  #         if [ -z "$prev_results_dir" ]; then
+  #           prev_results_dir="$(realpath ${{ github.workspace }}/../empty_dir)"
+  #           mkdir $prev_results_dir
+  #         fi
+  #         diff_output_dir=$(realpath ${{ github.workspace }}/diff_output)
+  #         python get_tests_diff.py \
+  #           ${{ steps.download-test-results.outputs.download-path }} \
+  #           $prev_results_dir \
+  #           $diff_output_dir
+  #         echo "diff-output-dir=$diff_output_dir" >> "$GITHUB_OUTPUT"
+
+  #     - name: Display structure of diffed files
+  #       run: ls ${{ steps.differ.outputs.diff-output-dir }} -R
+
+  #     - name: Publish Modified or Added Tests
+  #       uses: EnricoMi/publish-unit-test-result-action@v2
+  #       with:
+  #         check_name: Modified or Added Tests Compared to Master
+  #         files: "diff_output/modified_or_added/**/*.xml"
+  #         report_individual_runs: true
+  #         comment_mode: off
+  #         fail_on: nothing
+
+  #     - name: Publish Removed Tests
+  #       uses: EnricoMi/publish-unit-test-result-action@v2
+  #       with:
+  #         check_name: Removed Tests Compared to Master
+  #         files: "diff_output/removed/**/*.xml"
+  #         report_individual_runs: true
+  #         comment_mode: off
+  #         fail_on: nothing
