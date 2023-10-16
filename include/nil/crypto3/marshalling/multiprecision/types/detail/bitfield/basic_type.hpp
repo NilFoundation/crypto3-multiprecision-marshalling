@@ -92,6 +92,10 @@ namespace nil {
                             return length();
                         }
 
+                        static constexpr std::size_t bit_length() {
+                            return total_bits;
+                        }
+
                         template<typename TIter>
                         nil::marshalling::status_type read(TIter &iter, std::size_t size) {
                             if (size < length()) {

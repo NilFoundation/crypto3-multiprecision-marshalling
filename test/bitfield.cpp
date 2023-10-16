@@ -50,19 +50,19 @@ using integral_type = nil::crypto3::marshalling::types::integral<
     typename nil::crypto3::marshalling::processing::size_to_type<BaseTypeBitLength, IsSigned>::type,
     nil::marshalling::option::fixed_bit_length<FixedBitLength>>;
 
-template<typename TField>
-void test_buffer_equality(const TField &field, const std::vector<std::uint8_t> &expectedBuffer) {
+template<typename TField, typename OutputType = char>
+void test_buffer_equality(const TField &field, const std::vector<OutputType>& expectedBuffer) {
     nil::marshalling::status_type status;
-    std::vector<unsigned char> outDataBuf = nil::marshalling::pack(field, status);
+    std::vector<OutputType> outDataBuf = nil::marshalling::pack(field, status);
 
     BOOST_CHECK(std::equal(expectedBuffer.begin(), expectedBuffer.end(), outDataBuf.begin()));
 }
 
-template<typename TField>
+template<typename TField, typename OutputType = char>
 void test_round_trip(const TField &field,
                      nil::marshalling::status_type expectedStatus = nil::marshalling::status_type::success) {
     nil::marshalling::status_type status;
-    std::vector<char> outDataBuf = nil::marshalling::pack(field, status);
+    std::vector<OutputType> outDataBuf = nil::marshalling::pack(field, status);
 
     std::cout << "final blob: ";
     print_byteblob(outDataBuf.begin(), outDataBuf.end());
@@ -286,6 +286,31 @@ BOOST_AUTO_TEST_CASE(test_inner_field_endianness) {
     std::get<2>(members_be).value() = 0b00000;
 
     test_buffer_equality(big_endian_field, {0b00000111, 0b01101000, 0b00001000});
+}
+
+BOOST_AUTO_TEST_CASE(test_output_buffer_types) {
+    using integral_type_0 = integral_type<3, 3, false, nil::marshalling::option::big_endian>;
+    using integral_type_1 = integral_type<16, 16, false, nil::marshalling::option::little_endian>;
+    using integral_type_2 = integral_type<5, 5, false, nil::marshalling::option::big_endian>;
+
+    using BitfieldMembers = std::tuple<integral_type_0, integral_type_1, integral_type_2>;
+    using testing_type_big_endian =
+        nil::crypto3::marshalling::types::bitfield<nil::marshalling::field_type<nil::marshalling::option::big_endian>,
+                                                   BitfieldMembers>;
+
+    testing_type_big_endian big_endian_field;
+    static_cast<void>(big_endian_field);
+
+    auto &members_be = big_endian_field.value();
+    std::get<0>(members_be).value() = 0b000;
+    std::get<1>(members_be).value() = 0b1110110100000001;
+    std::get<2>(members_be).value() = 0b00000;
+
+    test_buffer_equality<testing_type_big_endian, bool>(big_endian_field, {0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0});
+    test_round_trip<testing_type_big_endian, bool>(big_endian_field);
+
+    test_buffer_equality<testing_type_big_endian, unsigned char>(big_endian_field, {0b00000111, 0b01101000, 0b00001000});
+    test_round_trip<testing_type_big_endian, unsigned char>(big_endian_field);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

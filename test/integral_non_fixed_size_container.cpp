@@ -32,38 +32,15 @@
 #include <iostream>
 #include <iomanip>
 
-#include <nil/marshalling/status_type.hpp>
-#include <nil/marshalling/endianness.hpp>
-
+#include <nil/crypto3/marshalling/multiprecision/types/integral.hpp>
 #include <nil/crypto3/multiprecision/cpp_int.hpp>
 #include <nil/crypto3/multiprecision/number.hpp>
-
 #include <nil/marshalling/algorithms/pack.hpp>
+#include <nil/marshalling/endianness.hpp>
+#include <nil/marshalling/status_type.hpp>
 
-#include <nil/crypto3/marshalling/multiprecision/types/integral.hpp>
 #include "utils.h"
 
-
-template<class T>
-struct unchecked_type {
-    typedef T type;
-};
-
-template<unsigned MinBits,
-         unsigned MaxBits,
-         nil::crypto3::multiprecision::cpp_integer_type SignType,
-         nil::crypto3::multiprecision::cpp_int_check_type Checked,
-         class Allocator,
-         nil::crypto3::multiprecision::expression_template_option ExpressionTemplates>
-struct unchecked_type<nil::crypto3::multiprecision::number<
-    nil::crypto3::multiprecision::cpp_int_backend<MinBits, MaxBits, SignType, Checked, Allocator>,
-    ExpressionTemplates>> {
-    typedef nil::crypto3::multiprecision::number<
-        nil::crypto3::multiprecision::
-            cpp_int_backend<MinBits, MaxBits, SignType, nil::crypto3::multiprecision::unchecked, Allocator>,
-        ExpressionTemplates>
-        type;
-};
 
 template<typename Endianness, class T, std::size_t TSize, typename OutputType>
 void test_round_trip_non_fixed_size_container_fixed_precision(std::vector<T>

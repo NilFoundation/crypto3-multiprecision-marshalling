@@ -181,6 +181,12 @@ namespace nil {
                         return base_impl_type::max_length();
                     }
 
+                    /// @brief Get bit length required to serialise the current field value.
+                    /// @return Number of bits it will take to serialise the field value.
+                    constexpr std::size_t bit_length() {
+                        return base_impl_type::bit_length();
+                    }
+
                     /// @brief Read field value from input data sequence
                     /// @param[in, out] iter Iterator to read the data.
                     /// @param[in] size Number of bytes available for reading.

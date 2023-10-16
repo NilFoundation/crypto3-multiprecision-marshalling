@@ -42,7 +42,7 @@ T generate_random() {
         val += gen();
     }
 
-    if (std::numeric_limits<T>::is_signed) {
+    if (GenerateSigned && std::numeric_limits<T>::is_signed) {
         static boost::random::uniform_int_distribution<int> sign_gen(-1, 1);
         int sign = sign_gen(gen);
         val *= sign;
