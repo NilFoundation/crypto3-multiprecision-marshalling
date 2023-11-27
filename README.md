@@ -22,4 +22,4 @@ library in a project it is required to:
 
 ### External
 
-* [Boost](https://boost.org) (>= 1.80)
+* [Boost](https://boost.org) (>= 1.81)

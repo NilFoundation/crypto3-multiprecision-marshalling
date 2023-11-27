@@ -19,26 +19,22 @@ cm_test_link_libraries(${CMAKE_WORKSPACE_NAME}_${CURRENT_PROJECT_NAME}
                        crypto3::multiprecision
                        ${CMAKE_WORKSPACE_NAME}::core)
 
-option(ENABLE_JUNIT_TEST_OUTPUT "Enable JUnit output for tests" FALSE)
-set(TEST_RESULTS_DIR "${CMAKE_CURRENT_BINARY_DIR}/junit_results" CACHE STRING "Directory to save test results in JUnit format")
-
-macro(define_marshalling_test test)
-
-    get_filename_component(name ${test} NAME)
+macro(define_marshalling_test name)
+    get_filename_component(name ${name} NAME)
 
     set(test_name "marshalling_${name}_test")
 
     set(additional_args "")
     if(ENABLE_JUNIT_TEST_OUTPUT)
+        set(TEST_RESULTS_DIR "${CMAKE_CURRENT_BINARY_DIR}/junit_results")
         set(TEST_LOGS_DIR "${TEST_RESULTS_DIR}/logs")
         file(MAKE_DIRECTORY ${TEST_LOGS_DIR} ${TEST_REPORTS_DIR})
 
         set(additional_args "--log_format=JUNIT"
-                            "--log_sink=${TEST_LOGS_DIR}/${TEST_NAME}.xml")
+                            "--log_sink=${TEST_LOGS_DIR}/${test_name}.xml")
     endif()
 
-    cm_test(NAME marshalling_${name}_test SOURCES ${test}.cpp ARGS ${additional_args})
-
+    cm_test(NAME ${test_name} SOURCES ${name}.cpp ARGS ${additional_args})
 
     target_include_directories(marshalling_${name}_test PRIVATE
                                "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
@@ -64,7 +60,6 @@ set(TESTS_NAMES
     "integral"
     "integral_fixed_size_container"
     "integral_non_fixed_size_container"
-    "failing"
     )
 
 foreach(TEST_NAME ${TESTS_NAMES})
