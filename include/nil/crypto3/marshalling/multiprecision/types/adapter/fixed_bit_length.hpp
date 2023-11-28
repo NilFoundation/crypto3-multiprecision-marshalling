@@ -54,14 +54,11 @@ namespace nil {
                     static const std::size_t _bit_length = TLen;
                     static_assert(0 < _bit_length, "Bit length is expected to be greater than 0");
                     static_assert(_bit_length <= std::numeric_limits<base_serialized_type>::digits,
-                                  "The provided length limit is too big");
-
-                    static const std::size_t byte_length =
-                        nil::marshalling::processing::bit_size_to_byte_size<_bit_length>::value;
+                                  "The provided length is too big");
 
                     static constexpr bool is_signed = std::numeric_limits<base_serialized_type>::is_signed;
                     // Multiprecision has no support for serialization signed values yet
-                    static_assert(!is_signed, "Signed base class for fixed_bit_length is not supported");
+                    static_assert(!is_signed, "Signed base class for multiprecision fixed_bit_length is not supported");
 
                 public:
                     using value_type = typename base_impl_type::value_type;
