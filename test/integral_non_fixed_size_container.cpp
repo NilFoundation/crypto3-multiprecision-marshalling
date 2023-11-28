@@ -32,62 +32,15 @@
 #include <iostream>
 #include <iomanip>
 
-#include <nil/marshalling/status_type.hpp>
-#include <nil/marshalling/endianness.hpp>
-
+#include <nil/crypto3/marshalling/multiprecision/types/integral.hpp>
 #include <nil/crypto3/multiprecision/cpp_int.hpp>
 #include <nil/crypto3/multiprecision/number.hpp>
-
 #include <nil/marshalling/algorithms/pack.hpp>
+#include <nil/marshalling/endianness.hpp>
+#include <nil/marshalling/status_type.hpp>
 
-#include <nil/crypto3/marshalling/multiprecision/types/integral.hpp>
+#include "utils.h"
 
-template<class T>
-struct unchecked_type {
-    typedef T type;
-};
-
-template<unsigned MinBits,
-         unsigned MaxBits,
-         nil::crypto3::multiprecision::cpp_integer_type SignType,
-         nil::crypto3::multiprecision::cpp_int_check_type Checked,
-         class Allocator,
-         nil::crypto3::multiprecision::expression_template_option ExpressionTemplates>
-struct unchecked_type<nil::crypto3::multiprecision::number<
-    nil::crypto3::multiprecision::cpp_int_backend<MinBits, MaxBits, SignType, Checked, Allocator>,
-    ExpressionTemplates>> {
-    typedef nil::crypto3::multiprecision::number<
-        nil::crypto3::multiprecision::
-            cpp_int_backend<MinBits, MaxBits, SignType, nil::crypto3::multiprecision::unchecked, Allocator>,
-        ExpressionTemplates>
-        type;
-};
-
-template<class T>
-T generate_random() {
-    typedef typename unchecked_type<T>::type unchecked_T;
-
-    static const unsigned limbs = std::numeric_limits<T>::is_specialized && std::numeric_limits<T>::is_bounded ?
-                                      std::numeric_limits<T>::digits / std::numeric_limits<unsigned>::digits + 3 :
-                                      20;
-
-    static boost::random::uniform_int_distribution<unsigned> ui(0, limbs);
-    static boost::random::mt19937 gen;
-    unchecked_T val = gen();
-    unsigned lim = ui(gen);
-    for (unsigned i = 0; i < lim; ++i) {
-        val *= (gen.max)();
-        val += gen();
-    }
-    return val;
-}
-
-template<typename TIter>
-void print_byteblob(TIter iter_begin, TIter iter_end) {
-    for (TIter it = iter_begin; it != iter_end; it++) {
-        std::cout << std::hex << int(*it) << std::endl;
-    }
-}
 
 template<typename Endianness, class T, std::size_t TSize, typename OutputType>
 void test_round_trip_non_fixed_size_container_fixed_precision(std::vector<T>
@@ -96,7 +49,7 @@ void test_round_trip_non_fixed_size_container_fixed_precision(std::vector<T>
     using unit_type = OutputType;
 
     nil::marshalling::status_type status;
-    std::vector<unit_type> cv = 
+    std::vector<unit_type> cv =
         nil::marshalling::pack<Endianness>(val_container, status);
 
 
@@ -106,7 +59,7 @@ void test_round_trip_non_fixed_size_container_fixed_precision(std::vector<T>
 
     BOOST_CHECK(std::equal(val_container.begin(), val_container.end(), test_val.begin()));
     BOOST_CHECK(status == nil::marshalling::status_type::success);
-    
+
 }
 
 template<typename Endianness, class T, std::size_t TSize, typename OutputType>

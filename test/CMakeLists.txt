@@ -60,6 +60,7 @@ set(TESTS_NAMES
     "integral"
     "integral_fixed_size_container"
     "integral_non_fixed_size_container"
+    "bitfield"
     )
 
 foreach(TEST_NAME ${TESTS_NAMES})

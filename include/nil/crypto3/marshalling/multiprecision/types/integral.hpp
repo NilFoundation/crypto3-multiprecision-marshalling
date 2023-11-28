@@ -256,12 +256,6 @@ namespace nil {
                                   "nil::marshalling::option::fixed_length option is not applicable to "
                                   "crypto3::integral type");
 
-                    // because such an adapter uses pure byte reading,
-                    // incompatible with crypto3::multiprecision
-                    static_assert(!parsed_options_type::has_fixed_bit_length_limit,
-                                  "nil::marshalling::option::fixed_bit_length option is not applicable to "
-                                  "crypto3::integral type");
-
                     static_assert(!parsed_options_type::has_scaling_ratio,
                                   "nil::marshalling::option::scaling_ratio option is not applicable to "
                                   "crypto3::integral type");
