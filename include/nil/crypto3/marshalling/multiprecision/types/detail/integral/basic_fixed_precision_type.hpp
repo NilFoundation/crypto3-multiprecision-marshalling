@@ -31,6 +31,7 @@
 #include <boost/type_traits/is_integral.hpp>
 
 #include <nil/marshalling/status_type.hpp>
+#include <nil/marshalling/types/detail/common_funcs.hpp>
 
 #include <nil/crypto3/multiprecision/number.hpp>
 #include <nil/crypto3/multiprecision/cpp_int.hpp>
@@ -121,15 +122,36 @@ namespace nil {
 
                         template<typename TIter>
                         nil::marshalling::status_type read(TIter &iter, std::size_t size) {
-                            
-                            if (size < (std::is_same_v<typename std::iterator_traits<TIter>::value_type, bool> ? 
-                                            bit_length() : length())) {
+                            std::size_t len = (std::is_same_v<typename std::iterator_traits<TIter>::value_type, bool> ?
+                                            max_bit_length() : max_length());
+                            if (size < len) {
                                 return nil::marshalling::status_type::not_enough_data;
                             }
 
-                            read_no_status(iter);
-                            iter += (std::is_same_v<typename std::iterator_traits<TIter>::value_type, bool> ? 
-                                            max_bit_length() : max_length());
+                            if (nil::marshalling::types::detail::zero_count::get() > 0) {
+                                nil::marshalling::types::detail::zero_count::dec();
+                                value_type zero_val = 0;
+                                value_ = zero_val;
+                                return nil::marshalling::status_type::success;
+                            }
+
+                            if (nil::marshalling::types::detail::zero_count::is_enable()) {
+                                std::uint8_t byte = static_cast<std::uint8_t>(*iter);
+                                iter++;
+                                if (byte > 0) {
+                                    std::size_t num_zeros = crypto3::marshalling::processing::read_data<bit_length(), value_type, typename base_impl_type::endian_type>(iter);
+                                    nil::marshalling::types::detail::zero_count::set(num_zeros - 1);
+                                    value_type zero_val = 0;
+                                    value_ = zero_val;
+                                } else {
+                                    read_no_status(iter);
+                                }
+                            } else {
+                                read_no_status(iter);
+                            }
+
+                            iter += len;
+
                             return nil::marshalling::status_type::success;
                         }
 
@@ -141,15 +163,48 @@ namespace nil {
 
                         template<typename TIter>
                         nil::marshalling::status_type write(TIter &iter, std::size_t size) const {
-                            if (size < (std::is_same_v<typename std::iterator_traits<TIter>::value_type, bool> ? 
-                                            bit_length() : length())) {
+                            const auto len = (std::is_same_v<typename std::iterator_traits<TIter>::value_type, bool> ?
+                                                max_bit_length() : max_length());
+                            if (size < len) {
                                 return nil::marshalling::status_type::buffer_overflow;
                             }
 
-                            write_no_status(iter);
+                            if (value_ != 0) {
+                                if (nil::marshalling::types::detail::zero_count::get() > 0) {
+                                    *iter = 1;
+                                    iter++;
+                                    const auto num_zeros_val = static_cast<value_type>(nil::marshalling::types::detail::zero_count::get());
+                                    crypto3::marshalling::processing::write_data<bit_length(),
+                                                                         typename base_impl_type::endian_type>(num_zeros_val,
+                                                                                                               iter);
+                                    nil::marshalling::types::detail::zero_count::reset();
+                                    iter += len;
+                                }
+                                if (nil::marshalling::types::detail::zero_count::is_enable()) {
+                                    *iter = 0;
+                                    iter++;
+                                }
+                                write_no_status(iter);
+                                iter += len;
+                            } else {
+                                if (nil::marshalling::types::detail::zero_count::is_enable()) {
+                                    nil::marshalling::types::detail::zero_count::inc();
+                                    if ((size - len) < len) {
+                                        *iter = 1;
+                                        iter++;
+                                        const auto num_zeros_val = static_cast<value_type>(nil::marshalling::types::detail::zero_count::get());
+                                        crypto3::marshalling::processing::write_data<bit_length(),
+                                                                            typename base_impl_type::endian_type>(num_zeros_val,
+                                                                                                                iter);
+                                        iter += len;
+                                        nil::marshalling::types::detail::zero_count::reset();
+                                    }
+                                } else {
+                                    write_no_status(iter);
+                                    iter += len;
+                                }
+                            }
 
-                            iter += (std::is_same_v<typename std::iterator_traits<TIter>::value_type, bool> ? 
-                                            max_bit_length() : max_length());
                             return nil::marshalling::status_type::success;
                         }
 
